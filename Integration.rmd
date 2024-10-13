@@ -1,0 +1,66 @@
+---
+title: "Integration_Ravi_tutorial_hpa"
+author: "Ladislav Buček"
+date: "10/10/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Library
+```{r library}
+set.seed(100)
+library(dplyr)
+library(Seurat)
+library(patchwork)
+# working folder
+here <- "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/output "
+setwd(here)
+## Data loading
+```
+
+```{r data loading}
+obj_0_hpa_B <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_0_hpa_B_processed.rds")
+obj_1_hpa_B <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_1_hpa_B_processed.rds")
+obj_3_hpa_A <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_3_hpa_A_processed.rds")
+obj_12_hpa_A <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_12_hpa_A_processed.rds")
+#top10 <- head(VariableFeatures(obj_0_hpa_B), 10)
+#top10
+```
+
+```{r} 
+Combined_hpa <- merge(obj_0_hpa_B, y = c(obj_1_hpa_B, obj_3_hpa_A, obj_12_hpa_A), project = "Combined_hpa")
+#Combined_hpa[["RNA"]] <- split(Combined_hpa[["RNA"]], f = Combined_hpa$orig.ident)
+# Clear all scale.data layers
+#Combined_hpa@scale.
+# Optionally clear extra data layers too
+#Combined_hpa[["RNA"]]@data <- NULL
+Combined_hpa <- ScaleData(Combined_hpa)
+Combined_hpa
+```
+
+## PCA UMAP
+Resolution in find clusters ?
+```{r PCA}
+Combined_hpa <- RunPCA(Combined_hpa)
+#Combined_hpa
+ElbowPlot(Combined_hpa, ndims = 50)
+Combined_hpa <- FindNeighbors(Combined_hpa, dims = 1:30 , reduction = "pca")
+Combined_hpa <- FindClusters(Combined_hpa, resolution = 2, cluster.name = "unintegrated_clusters")
+Combined_hpa <- RunUMAP(Combined_hpa, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+DimPlot(Combined_hpa, reduction = "umap.unintegrated" ) #group.by = c("stim", "seurat_clusters")
+```
+
+# Integration 
+Doesn't work. Can by some problem with data and counts layers??
+```{r integration}
+Combined_hpa
+saveRDS(Combined_hpa, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/Combined_hpa.rds")
+
+Combined_hpa <- IntegrateLayers(object = Combined_hpa, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
+##Error in .subscript.2ary(x, i, , drop = TRUE) : subscript out of bounds
+
+# re-join layers after integration
+
+```

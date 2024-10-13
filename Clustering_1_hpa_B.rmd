@@ -1,0 +1,75 @@
+---
+title: "Clustering 1_hpa_B"
+author: "Ladislav Buček"
+date: "10/10/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+```{r}
+library(dplyr)
+library(Seurat)
+library(patchwork)
+```
+## Loading data
+I've renamed features.tsv to genes.tsv for Read10X() to work.
+```{r data loading}
+data_1_hpa_B <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/raw/regeneration/STAR/1_hpa_B/filtered")
+#data_3_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/raw/regeneration/STAR/3_hpa_A/filtered")
+#data_12_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/raw/regeneration/STAR/12_hpa_A/filtered")
+```
+### QC
+
+```{r QC}
+obj_1_hpa_B <- CreateSeuratObject(counts = data_1_hpa_B, project = "ravi_0_hpa_B", min.cells = 3, min.features = 200)
+obj_1_hpa_B[["percent.mt"]] <- PercentageFeatureSet(obj_1_hpa_B, pattern = "^mt-")
+# Visualize QC metrics as a violin plot
+VlnPlot(obj_1_hpa_B, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+# FeatureScatter is typically used to visualize feature-feature relationships, but can be used
+# for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
+
+plot1 <- FeatureScatter(obj_1_hpa_B, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(obj_1_hpa_B, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 + plot2
+obj_1_hpa_B <- subset(obj_1_hpa_B, subset = nFeature_RNA > 200 & nFeature_RNA < 15000 & percent.mt < 25)
+```
+High mitochondrial gene expression (<75%) in some cells and many cells is in category with mt gene expression over 10 %.
+
+
+## Normalization 
+Using log normalization.
+
+```{r norm}
+obj_1_hpa_B <- NormalizeData(obj_1_hpa_B, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+
+## Feature selection 
+
+
+```{r feature selection}
+obj_1_hpa_B <- FindVariableFeatures(obj_1_hpa_B, selection.method = "vst", nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(obj_1_hpa_B), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(obj_1_hpa_B)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+
+## Data scaling 
+
+```{r data scaling}
+#all.genes <- rownames(obj_1_hpa_B)
+#obj_1_hpa_B <- ScaleData(obj_1_hpa_B, features = all.genes)
+```
+## Processed data saving 
+
+```{R data saving}
+saveRDS(obj_1_hpa_B, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_1_hpa_B_processed.rds")
+```
