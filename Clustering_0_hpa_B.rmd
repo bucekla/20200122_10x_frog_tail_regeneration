@@ -10,10 +10,20 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Libraries
-```{r}
-library(dplyr)
-library(Seurat)
-library(patchwork)
+```{r library}
+options(java.parameters = "-Xmx30000m")
+set.seed(100)
+required_Packages_Install <- c("dplyr", "patchwork", "Seurat")
+for(Package in required_Packages_Install){
+  if(!require(Package,character.only = TRUE)) { 
+    install.packages(Package, dependencies=TRUE)
+  }
+  library(Package,character.only = TRUE)
+}
+
+# working folder
+here <- "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/output "
+setwd(here)
 ```
 ## Loading data
 I've renamed features.tsv to genes.tsv for Read10X() to work.
