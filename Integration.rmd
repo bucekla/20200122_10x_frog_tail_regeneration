@@ -28,45 +28,14 @@ obj_0_hpa_B_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp
 obj_1_hpa_B_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_1_hpa_B_processed.rds")
 obj_3_hpa_A_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_3_hpa_A_processed.rds")
 obj_12_hpa_A_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_12_hpa_A_processed.rds")
-
-data_0_hpa_B <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/0_hpa_B/filtered")
-data_1_hpa_B <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/1_hpa_B/filtered")
-data_3_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/3_hpa_A/filtered")
-data_12_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/12_hpa_A/filtered")
-
-
-obj_0_hpa_B_original <- CreateSeuratObject(counts = data_0_hpa_B, project = "ravi_0_hpa_B", min.cells = 3, min.features = 200)
-obj_0_hpa_B_original <- AddMetaData(object = obj_0_hpa_B_original, metadata = 0, col.name = "hpa")
-
-obj_1_hpa_B_original <- CreateSeuratObject(counts = data_1_hpa_B, project = "ravi_1_hpa_B", min.cells = 3, min.features = 200)
-obj_1_hpa_B_original <- AddMetaData(object = obj_1_hpa_B_original, metadata = 1, col.name = "hpa")
-
-obj_3_hpa_A_original <- CreateSeuratObject(counts = data_3_hpa_A, project = "ravi_3_hpa_A", min.cells = 3, min.features = 200)
-obj_3_hpa_A_original <- AddMetaData(object = obj_3_hpa_A_original, metadata = 3, col.name = "hpa")
-
-obj_12_hpa_A_original <- CreateSeuratObject(counts = data_12_hpa_A, project = "ravi_12_hpa_A", min.cells = 3, min.features = 200)
-obj_12_hpa_A_original <- AddMetaData(object = obj_12_hpa_A_original, metadata = 12, col.name = "hpa")
-
-obj_0_hpa_B_removed <- setdiff(rownames(obj_0_hpa_B_original), rownames(obj_0_hpa_B_processed))
-obj_0_hpa_B_removed
-
-obj_1_hpa_B_removed <- setdiff(rownames(obj_1_hpa_B_original), rownames(obj_1_hpa_B_processed))
-obj_3_hpa_A_removed  <- setdiff(rownames(obj_3_hpa_A_original), rownames(obj_3_hpa_A_processed))
-obj_12_hpa_A_removed <- setdiff(rownames(obj_12_hpa_A_original), rownames(obj_12_hpa_A_processed))
-
-temp1 <- Reduce(intersect, list(obj_0_hpa_B_removed , obj_1_hpa_B_removed , obj_3_hpa_A_removed, obj_12_hpa_A_removed))
-
-
 ```
 ## Merging and data scaling
 ```{r} 
-Combined_hpa <- merge(obj_0_hpa_B_original, y = c(obj_1_hpa_B_original, obj_3_hpa_A_original, obj_12_hpa_A_original), project = "Combined_hpa")
+Combined_hpa <- merge(obj_0_hpa_B_processed, y = c(obj_1_hpa_B_processed, obj_3_hpa_A_processed, obj_12_hpa_A_processed), project = "Combined_hpa")
 all.genes <- rownames(Combined_hpa)
 Combined_hpa <- NormalizeData(Combined_hpa)
 Combined_hpa <- FindVariableFeatures(Combined_hpa)
 Combined_hpa <- ScaleData(Combined_hpa, features = all.genes)
-
-
 ```
 
 
