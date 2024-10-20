@@ -106,12 +106,9 @@ I tried this and it doesn't work too
 
 ```
 ## Integration 
-Error i get is printed on the last line.
+Error resolved by scaling after Merging
 ```{r integration}
 Combined_hpa
 saveRDS(Combined_hpa, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa.rds")
-
-
 Combined_hpa <- IntegrateLayers(object = Combined_hpa, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
-##########Error in .subscript.2ary(x, i, , drop = TRUE) : subscript out of bounds#################
 ```
