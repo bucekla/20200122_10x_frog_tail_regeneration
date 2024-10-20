@@ -10,57 +10,108 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 Library
 ```{r library}
+options(java.parameters = "-Xmx30000m")
 set.seed(100)
-library(dplyr)
-library(Seurat)
-library(patchwork)
-# working folder
-here <- "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/output "
-setwd(here)
-## Data loading
+
+required_Packages_Install <- c("dplyr", "patchwork", "Seurat")
+for(Package in required_Packages_Install){
+  if(!require(Package,character.only = TRUE)) { 
+    install.packages(Package, dependencies=TRUE)
+  }
+  library(Package,character.only = TRUE)
+}
+
 ```
 
 ```{r data loading}
-obj_0_hpa_B <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_0_hpa_B_processed.rds")
-obj_1_hpa_B <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_1_hpa_B_processed.rds")
-obj_3_hpa_A <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_3_hpa_A_processed.rds")
-obj_12_hpa_A <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_12_hpa_A_processed.rds")
-#top10 <- head(VariableFeatures(obj_0_hpa_B), 10)
-#top10
+obj_0_hpa_B_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_0_hpa_B_processed.rds")
+obj_1_hpa_B_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_1_hpa_B_processed.rds")
+obj_3_hpa_A_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_3_hpa_A_processed.rds")
+obj_12_hpa_A_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_12_hpa_A_processed.rds")
+
+data_0_hpa_B <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/0_hpa_B/filtered")
+data_1_hpa_B <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/1_hpa_B/filtered")
+data_3_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/3_hpa_A/filtered")
+data_12_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/12_hpa_A/filtered")
+
+
+obj_0_hpa_B_original <- CreateSeuratObject(counts = data_0_hpa_B, project = "ravi_0_hpa_B", min.cells = 3, min.features = 200)
+obj_0_hpa_B_original <- AddMetaData(object = obj_0_hpa_B_original, metadata = 0, col.name = "hpa")
+
+obj_1_hpa_B_original <- CreateSeuratObject(counts = data_1_hpa_B, project = "ravi_1_hpa_B", min.cells = 3, min.features = 200)
+obj_1_hpa_B_original <- AddMetaData(object = obj_1_hpa_B_original, metadata = 1, col.name = "hpa")
+
+obj_3_hpa_A_original <- CreateSeuratObject(counts = data_3_hpa_A, project = "ravi_3_hpa_A", min.cells = 3, min.features = 200)
+obj_3_hpa_A_original <- AddMetaData(object = obj_3_hpa_A_original, metadata = 3, col.name = "hpa")
+
+obj_12_hpa_A_original <- CreateSeuratObject(counts = data_12_hpa_A, project = "ravi_12_hpa_A", min.cells = 3, min.features = 200)
+obj_12_hpa_A_original <- AddMetaData(object = obj_12_hpa_A_original, metadata = 12, col.name = "hpa")
+
+obj_0_hpa_B_removed <- setdiff(rownames(obj_0_hpa_B_original), rownames(obj_0_hpa_B_processed))
+obj_0_hpa_B_removed
+
+obj_1_hpa_B_removed <- setdiff(rownames(obj_1_hpa_B_original), rownames(obj_1_hpa_B_processed))
+obj_3_hpa_A_removed  <- setdiff(rownames(obj_3_hpa_A_original), rownames(obj_3_hpa_A_processed))
+obj_12_hpa_A_removed <- setdiff(rownames(obj_12_hpa_A_original), rownames(obj_12_hpa_A_processed))
+
+temp1 <- Reduce(intersect, list(obj_0_hpa_B_removed , obj_1_hpa_B_removed , obj_3_hpa_A_removed, obj_12_hpa_A_removed))
+
+
+```
+## Merging and data scaling
+```{r} 
+Combined_hpa <- merge(obj_0_hpa_B_original, y = c(obj_1_hpa_B_original, obj_3_hpa_A_original, obj_12_hpa_A_original), project = "Combined_hpa")
+all.genes <- rownames(Combined_hpa)
+Combined_hpa <- NormalizeData(Combined_hpa)
+Combined_hpa <- FindVariableFeatures(Combined_hpa)
+Combined_hpa <- ScaleData(Combined_hpa, features = all.genes)
+
+
 ```
 
-```{r} 
-Combined_hpa <- merge(obj_0_hpa_B, y = c(obj_1_hpa_B, obj_3_hpa_A, obj_12_hpa_A), project = "Combined_hpa")
-#Combined_hpa[["RNA"]] <- split(Combined_hpa[["RNA"]], f = Combined_hpa$orig.ident)
-# Clear all scale.data layers
-#Combined_hpa@scale.
-# Optionally clear extra data layers too
-#Combined_hpa[["RNA"]]@data <- NULL
-Combined_hpa <- ScaleData(Combined_hpa)
-Combined_hpa
-```
 
 ## PCA UMAP
-Resolution in find clusters ?
 ```{r PCA}
 Combined_hpa <- RunPCA(Combined_hpa)
-#Combined_hpa
 ElbowPlot(Combined_hpa, ndims = 50)
 Combined_hpa <- FindNeighbors(Combined_hpa, dims = 1:30 , reduction = "pca")
 Combined_hpa <- FindClusters(Combined_hpa, resolution = 2, cluster.name = "unintegrated_clusters")
 Combined_hpa <- RunUMAP(Combined_hpa, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
-DimPlot(Combined_hpa, reduction = "umap.unintegrated" ) #group.by = c("stim", "seurat_clusters")
+DimPlot(Combined_hpa, reduction = "umap.unintegrated" )
 ```
 
-# Integration 
-Doesn't work. Can by some problem with data and counts layers??
+## Alternative path
+I tried this and it doesn't work too 
+```{r}
+#features <- SelectIntegrationFeatures(object.list = list(obj_0_hpa_B, obj_1_hpa_B, obj_3_hpa_A, obj_12_hpa_A))
+#obj_0_hpa_B <- ScaleData(obj_0_hpa_B, features = features)
+#obj_1_hpa_B <- ScaleData(obj_1_hpa_B, features = features)
+#obj_3_hpa_A <- ScaleData(obj_3_hpa_A, features = features)
+#obj_12_hpa_A <- ScaleData(obj_12_hpa_A, features = features)
+
+#anchors <- FindIntegrationAnchors(object.list = list(obj_0_hpa_B, obj_1_hpa_B, obj_3_hpa_A, obj_12_hpa_A), anchor.features = features)
+#Combined_hpa <- IntegrateData(anchorset = anchors)
+##### Scale integrated data
+#Combined_hpa <- ScaleData(Combined_hpa)
+
+##### Run PCA
+#Combined_hpa <- RunPCA(Combined_hpa)
+
+#### Run UMAP
+#Combined_hpa <- RunUMAP(Combined_hpa, dims = 1:30)
+
+#### Find Clusters
+#Combined_hpa <- FindNeighbors(Combined_hpa, dims = 1:30)
+#Combined_hpa <- FindClusters(Combined_hpa, resolution = 0.5)
+
+```
+## Integration 
+Error i get is printed on the last line.
 ```{r integration}
 Combined_hpa
-saveRDS(Combined_hpa, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/Combined_hpa.rds")
+saveRDS(Combined_hpa, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa.rds")
+
 
 Combined_hpa <- IntegrateLayers(object = Combined_hpa, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
-##Error in .subscript.2ary(x, i, , drop = TRUE) : subscript out of bounds
-
-# re-join layers after integration
-
+##########Error in .subscript.2ary(x, i, , drop = TRUE) : subscript out of bounds#################
 ```

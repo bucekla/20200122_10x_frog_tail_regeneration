@@ -11,26 +11,32 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Libraries
 ```{r}
-library(dplyr)
-library(Seurat)
-library(patchwork)
+options(java.parameters = "-Xmx30000m")
+set.seed(100)
+required_Packages_Install <- c("dplyr", "patchwork", "Seurat")
+for(Package in required_Packages_Install){
+  if(!require(Package,character.only = TRUE)) { 
+    install.packages(Package, dependencies=TRUE)
+  }
+  library(Package,character.only = TRUE)
+}
 ```
 ## Loading data
 I've renamed features.tsv to genes.tsv for Read10X() to work.
 ```{r data loading}
-data_3_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/raw/regeneration/STAR/3_hpa_A/filtered")
+data_3_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/raw/regeneration/STAR/3_hpa_A/filtered")
 #data_12_hpa_A <- Read10X(data.dir = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/raw/regeneration/STAR/12_hpa_A/filtered")
 ```
 ### QC
 
 ```{r QC}
-obj_3_hpa_A <- CreateSeuratObject(counts = data_3_hpa_A, project = "ravi_0_hpa_B", min.cells = 3, min.features = 200)
+obj_3_hpa_A <- CreateSeuratObject(counts = data_3_hpa_A, project = "ravi_3_hpa_A", min.cells = 3, min.features = 200)
+obj_3_hpa_A <- AddMetaData(object = obj_3_hpa_A, metadata = 3, col.name = "hpa")
 obj_3_hpa_A[["percent.mt"]] <- PercentageFeatureSet(obj_3_hpa_A, pattern = "^mt-")
 # Visualize QC metrics as a violin plot
 VlnPlot(obj_3_hpa_A, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 # FeatureScatter is typically used to visualize feature-feature relationships, but can be used
 # for anything calculated by the object, i.e. columns in object metadata, PC scores etc.
-
 plot1 <- FeatureScatter(obj_3_hpa_A, feature1 = "nCount_RNA", feature2 = "percent.mt")
 plot2 <- FeatureScatter(obj_3_hpa_A, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
 plot1 + plot2
@@ -50,15 +56,15 @@ obj_3_hpa_A <- NormalizeData(obj_3_hpa_A, normalization.method = "LogNormalize",
 
 
 ```{r feature selection}
-obj_3_hpa_A <- FindVariableFeatures(obj_3_hpa_A, selection.method = "vst", nfeatures = 2000)
+#obj_3_hpa_A <- FindVariableFeatures(obj_3_hpa_A, selection.method = "vst", nfeatures = 2000)
 
 # Identify the 10 most highly variable genes
-top10 <- head(VariableFeatures(obj_3_hpa_A), 10)
+#top10 <- head(VariableFeatures(obj_3_hpa_A), 10)
 
 # plot variable features with and without labels
-plot1 <- VariableFeaturePlot(obj_3_hpa_A)
-plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
-plot1 + plot2
+#plot1 <- VariableFeaturePlot(obj_3_hpa_A)
+#plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+#plot1 + plot2
 ```
 
 ## Data scaling 
@@ -71,5 +77,5 @@ plot1 + plot2
 ## Processed data saving 
 
 ```{R data saving}
-saveRDS(obj_3_hpa_A, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/ravi_data_tutorial/data/processed/obj_3_hpa_A_processed.rds")
+saveRDS(obj_3_hpa_A, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/obj_3_hpa_A_processed.rds")
 ```
