@@ -13,7 +13,7 @@ Library
 options(java.parameters = "-Xmx30000m")
 set.seed(100)
 
-required_Packages_Install <- c("dplyr", "patchwork", "Seurat")
+required_Packages_Install <- c("dplyr", "patchwork", "Seurat","DT","ggplot2")
 for(Package in required_Packages_Install){
   if(!require(Package,character.only = TRUE)) { 
     install.packages(Package, dependencies=TRUE)
@@ -80,4 +80,91 @@ Error resolved by scaling after Merging
 Combined_hpa
 saveRDS(Combined_hpa, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa.rds")
 Combined_hpa <- IntegrateLayers(object = Combined_hpa, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
+
+#rejoin layers 
+Combined_hpa[["RNA"]] <- JoinLayers(Combined_hpa[["RNA"]])
+
+Combined_hpa <- FindNeighbors(Combined_hpa, reduction = "integrated.cca", dims = 1:30)
+Combined_hpa <- FindClusters(Combined_hpa, resolution = 1)
+Combined_hpa <- RunUMAP(Combined_hpa, dims = 1:30, reduction = "integrated.cca")
+
+# Visualization
+DimPlot(Combined_hpa, reduction = "umap", group.by = c("hpa", "seurat_clusters"))
+DimPlot(Combined_hpa, reduction = "umap", split.by = "hpa")
+```
+
+## markers and annotation
+```{r}
+Idents(Combined_hpa) <- "seurat_annotations"
+Combined_hpa_markers <- FindAllMarkers(Combined_hpa, only.pos = TRUE)
+Combined_hpa_conserved_markers <- FindConservedMarkers(Combined_hpa)
+
+```
+
+```{r top population markers}
+datatable(Combined_hpa_markers %>% group_by(cluster) %>% top_n(n = 15, wt = avg_log2FC))
+```
+
+Resources for annotation
+- [Characterization of regeneration initiating cells during Xenopus laevis tail regeneration](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-024-03396-3)
+- [Identification of a regeneration organizing cell in the Xenopus tail](https://pmc.ncbi.nlm.nih.gov/articles/PMC6986927/)
+
+Identifying the populations
+```{r canonical markers}
+features_test <- c("tp63.L","tp63.S",            #basal epidermis
+                    "fgfbp2.L","nptx1.L",        #epidermis
+                    "epor.L","hba1.S",           #erythrocytes
+                    "itln1.L","anxa9.L",         #goblet cells
+                    "atp6v0d2.L","foxi1.L",      #ionocytes
+                    "iqcd.L","tekt3.L",          #MCCs
+                    "sox10.L","slc45a2.L",       #Melanocytes
+                    "eno3.L","des.1.L",          #muscle cells
+                    "sncb.L","elavl4.L",         #neuronal cells
+                    "plod2.L","col9a1-b",        #notochord
+                    "fgf10.L","lef1.S",          #ROCs
+                    "pax9.L","zic1.L",           #somites and other
+                    "foxa1.L","kcna4.S"          #SSCs
+                   )
+```
+```{r dotplot, echo=FALSE, fig.height=6, fig.width = 6.2}
+Combined_hpa@active.ident <- factor(Combined_hpa@active.ident,
+                               levels = c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32"))
+DotPlot(Combined_hpa, features = features_test) + theme(axis.text.x=element_text(angle=90, hjust = 1, vjust = 0.5))
+```
+Cluster annotation
+```{r eval=FALSE}
+seurat_integrated <- RenameIdents(seurat_integrated,
+                                  '0' = "basal epidermis",
+                                  '1' = "PER/Endo",
+                                  '2' = "PER/Endo",
+                                  '3' = "PER/Endo",
+                                  '4' = "PER/Endo",
+                                  '5' = "PER/Endo",
+                                  '6' = "PER/Endo",
+                                  '7' = "PER/Endo",
+                                  '8' = "PER/Endo",
+                                  '9' = "PER/Endo",
+                                  '10' = "PER/Endo",
+                                  '11' = "PER/Endo",
+                                  '12' = "PER/Endo",
+                                  '13' = "PER/Endo",
+                                  '14' = "PER/Endo",
+                                  '15' = "PER/Endo",
+                                  '16' = "PER/Endo",
+                                  '17' = "erythrocytes",
+                                  '18' = "PER/Endo",
+                                  '19' = "PER/Endo",
+                                  '20' = "PER/Endo",
+                                  '21' = "PER/Endo",
+                                  '22' = "PER/Endo",
+                                  '23' = "PER/Endo",
+                                  '24' = "PER/Endo",
+                                  '25' = "PER/Endo",
+                                  '26' = "PER/Endo",
+                                  '27' = "PER/Endo",
+                                  '28' = "PER/Endo",
+                                  '29' = "PER/Endo",
+                                  '30' = "PER/Endo",
+                                  '31' = "PER/Endo",
+                                  '32' = "PER/Endo",)
 ```
