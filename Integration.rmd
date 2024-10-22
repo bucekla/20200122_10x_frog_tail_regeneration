@@ -107,7 +107,6 @@ datatable(Combined_hpa_markers %>% group_by(cluster) %>% top_n(n = 30, wt = avg_
 
 Resources for annotation
 - [Characterization of regeneration initiating cells during Xenopus laevis tail regeneration](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-024-03396-3)
-- [Identification of a regeneration organizing cell in the Xenopus tail](https://pmc.ncbi.nlm.nih.gov/articles/PMC6986927/)
 
 Identifying the populations
 ```{r canonical markers}
