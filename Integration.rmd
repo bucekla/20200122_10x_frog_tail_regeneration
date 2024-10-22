@@ -95,14 +95,14 @@ DimPlot(Combined_hpa, reduction = "umap", split.by = "hpa")
 
 ## markers and annotation
 ```{r}
-Idents(Combined_hpa) <- "seurat_annotations"
+Idents(Combined_hpa) <- Combined_hpa@meta.data$seurat_clusters
 Combined_hpa_markers <- FindAllMarkers(Combined_hpa, only.pos = TRUE)
-Combined_hpa_conserved_markers <- FindConservedMarkers(Combined_hpa)
+#Combined_hpa_conserved_markers <- FindConservedMarkers(Combined_hpa)
 
 ```
 
 ```{r top population markers}
-datatable(Combined_hpa_markers %>% group_by(cluster) %>% top_n(n = 15, wt = avg_log2FC))
+datatable(Combined_hpa_markers %>% group_by(cluster) %>% top_n(n = 30, wt = avg_log2FC))
 ```
 
 Resources for annotation
@@ -123,7 +123,7 @@ features_test <- c("tp63.L","tp63.S",            #basal epidermis
                     "plod2.L","col9a1-b",        #notochord
                     "fgf10.L","lef1.S",          #ROCs
                     "pax9.L","zic1.L",           #somites and other
-                    "foxa1.L","kcna4.S"          #SSCs
+                    "foxa1.L","kcna4.S"          #SSCs 
                    )
 ```
 ```{r dotplot, echo=FALSE, fig.height=6, fig.width = 6.2}
@@ -135,36 +135,36 @@ Cluster annotation
 ```{r eval=FALSE}
 seurat_integrated <- RenameIdents(seurat_integrated,
                                   '0' = "basal epidermis",
-                                  '1' = "PER/Endo",
-                                  '2' = "PER/Endo",
-                                  '3' = "PER/Endo",
-                                  '4' = "PER/Endo",
-                                  '5' = "PER/Endo",
-                                  '6' = "PER/Endo",
-                                  '7' = "PER/Endo",
-                                  '8' = "PER/Endo",
-                                  '9' = "PER/Endo",
-                                  '10' = "PER/Endo",
-                                  '11' = "PER/Endo",
-                                  '12' = "PER/Endo",
-                                  '13' = "PER/Endo",
-                                  '14' = "PER/Endo",
-                                  '15' = "PER/Endo",
-                                  '16' = "PER/Endo",
+                                  '1' = "goblet cells",
+                                  '2' = "basal epidermis",
+                                  '3' = "basal epidermis",
+                                  '4' = "somites and others",
+                                  '5' = "basal epidermis",
+                                  '6' = "basal epidermis",
+                                  '7' = "somites and other",
+                                  '8' = "???",
+                                  '9' = "rocs",
+                                  '10' = "???",
+                                  '11' = "???",
+                                  '12' = "muscle cells",
+                                  '13' = "???",
+                                  '14' = "???",
+                                  '15' = "muscle cells",
+                                  '16' = "neuronal cells",
                                   '17' = "erythrocytes",
-                                  '18' = "PER/Endo",
-                                  '19' = "PER/Endo",
-                                  '20' = "PER/Endo",
-                                  '21' = "PER/Endo",
-                                  '22' = "PER/Endo",
-                                  '23' = "PER/Endo",
-                                  '24' = "PER/Endo",
-                                  '25' = "PER/Endo",
-                                  '26' = "PER/Endo",
-                                  '27' = "PER/Endo",
-                                  '28' = "PER/Endo",
-                                  '29' = "PER/Endo",
-                                  '30' = "PER/Endo",
-                                  '31' = "PER/Endo",
-                                  '32' = "PER/Endo",)
+                                  '18' = "ionocytes",
+                                  '19' = "goblet cells",
+                                  '20' = "melanocytes",
+                                  '21' = "???",
+                                  '22' = "SSCs",
+                                  '23' = "notochord",
+                                  '24' = "ionocytes",
+                                  '25' = "???",
+                                  '26' = "???",
+                                  '27' = "rocs",
+                                  '28' = "??",
+                                  '29' = "melanocytes",
+                                  '30' = "?somites and other? or notochord",
+                                  '31' = "SSCs",
+                                  '32' = "MCCs",)
 ```
