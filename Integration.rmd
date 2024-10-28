@@ -13,7 +13,7 @@ Library
 options(java.parameters = "-Xmx30000m")
 set.seed(100)
 
-required_Packages_Install <- c("dplyr", "patchwork", "Seurat","DT","ggplot2")
+required_Packages_Install <- c("dplyr", "patchwork", "Seurat","DT","ggplot2","UCell","Polychrome")
 for(Package in required_Packages_Install){
   if(!require(Package,character.only = TRUE)) { 
     install.packages(Package, dependencies=TRUE)
@@ -50,7 +50,7 @@ DimPlot(Combined_hpa, reduction = "umap.unintegrated" )
 ```
 
 ## Alternative path
-I tried this and it doesn't work too 
+Unused 
 ```{r}
 #features <- SelectIntegrationFeatures(object.list = list(obj_0_hpa_B, obj_1_hpa_B, obj_3_hpa_A, obj_12_hpa_A))
 #obj_0_hpa_B <- ScaleData(obj_0_hpa_B, features = features)
@@ -75,8 +75,8 @@ I tried this and it doesn't work too
 
 ```
 ## Integration 
-Error resolved by scaling after Merging
-```{r integration}
+Error resolved by scaling after merging after combining layers
+```{r integration, echo=FALSE, fig.height=10, fig.width = 16.2}
 Combined_hpa
 saveRDS(Combined_hpa, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa.rds")
 Combined_hpa <- IntegrateLayers(object = Combined_hpa, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca", verbose = FALSE)
@@ -89,8 +89,21 @@ Combined_hpa <- FindClusters(Combined_hpa, resolution = 1)
 Combined_hpa <- RunUMAP(Combined_hpa, dims = 1:30, reduction = "integrated.cca")
 
 # Visualization
-DimPlot(Combined_hpa, reduction = "umap", group.by = c("hpa", "seurat_clusters"))
+
+# Define a distinct color palette for clusters
+cluster_colors <- Polychrome::createPalette(33, c("#ff0000", "#00ff00", "#0000ff"))
+# Ensure cluster_colors is a named vector
+cluster_labels <- as.character(0:32)  # Creates labels from "0" to "31"
+names(cluster_colors) <- cluster_labels  # Assign each color to a cluster label
+
+# Generate the UMAP plot with custom colors
+DimPlot(Combined_hpa, reduction = "umap", group.by = "seurat_clusters") +
+    scale_color_manual(values = cluster_colors) +
+    theme_minimal() +
+    ggtitle("UMAP with Distinguishable Colors for 32 Clusters")
+
 DimPlot(Combined_hpa, reduction = "umap", split.by = "hpa")
+
 ```
 
 ## markers and annotation
@@ -105,6 +118,124 @@ Combined_hpa_markers <- FindAllMarkers(Combined_hpa, only.pos = TRUE)
 datatable(Combined_hpa_markers %>% group_by(cluster) %>% top_n(n = 30, wt = avg_log2FC))
 ```
 
+```{r UCell package, fig.height=6, fig.width = 10}
+# Extract the top markers for each cluster
+markers <- list()
+markers$basal_epidermis <- c("tp63.L","tp63.S")
+markers$epidermis <- c("fgfbp2.L","nptx1.L")
+markers$erythrocytes <- c("epor.L","hba1.S")
+markers$goblet_cells <- c("itln1.L","anxa9.L")
+markers$ionocytes <- c("atp6v0d2.L","foxi1.L")
+markers$MCCs <- c("iqcd.L","tekt3.L")
+markers$Melanocytes <- c("sox10.L","slc45a2.L")
+markers$muscle_cells <- c("eno3.L","des.1.L")
+markers$neuronal_cells <- c("sncb.L","elavl4.L")
+markers$notochord <- c("plod2.L","col9a1-b")
+markers$ROCs <- c("fgf10.L","lef1.S")
+markers$somites_and_other <- c("pax9.L","zic1.L")
+markers$SSCs <- c("foxa1.L","kcna4.S")
+
+# Convert the data into a list of gene sets
+# Score the gene sets using UCell
+Combined_hpa <- AddModuleScore_UCell(Combined_hpa, features = markers)
+
+# Visualize the scoring (example for the first two clusters)
+#signature.names <- paste0(names(Combined_hpa_markers), "_UCell")
+#VlnPlot(Combined_hpa, features = signature.names, group.by = "cluster_UCell")
+
+# Create signature names for each cluster's UCell score (from 0_UCell to 32_UCell, assuming 33 clusters)
+signature.names <- paste0(names(markers), "_UCell")  # Assuming there are clusters from 0 to 32
+
+# Group the UCell scores by clusters
+
+```
+
+1.UCell plots visualisation
+```{r Ucell plots, fig.height=6, fig.width = 10}
+# Define smaller groups of clusters or markers for plotting
+# Split by marker categories
+marker_groups <- list(
+    "Basal Epidermis" = c("tp63.L", "tp63.S"),
+    "Epidermis" = c("fgfbp2.L", "nptx1.L"),
+    "Erythrocytes" = c("epor.L", "hba1.S"),
+    "Goblet Cells" = c("itln1.L", "anxa9.L"),
+    "Ionocytes" = c("atp6v0d2.L", "foxi1.L"),
+    "MCCs" = c("iqcd.L", "tekt3.L"),
+    "Melanocytes" = c("sox10.L", "slc45a2.L"),
+    "Muscle Cells" = c("eno3.L", "des.1.L"),
+    "Neuronal Cells" = c("sncb.L", "elavl4.L"),
+    "Notochord" = c("plod2.L", "col9a1-b"),
+    "ROCs" = c("fgf10.L", "lef1.S"),
+    "Somites and Other" = c("pax9.L", "zic1.L"),
+    "SSCs" = c("foxa1.L", "kcna4.S")
+)
+
+# Loop through marker groups and create violin plots
+# Loop through marker groups and create violin plots
+for (group_name in names(marker_groups)) {
+    plot <- VlnPlot(Combined_hpa, features = marker_groups[[group_name]], 
+                    group.by = "seurat_clusters", pt.size = 0.5) +
+        ggtitle(paste("UCell Scores for", group_name)) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        theme(plot.title = element_text(size = 14, face = "bold"))
+    
+    print(plot)  # Print each combined plot for display
+}
+```
+
+2.UCell plots visualisation
+```{r Ucell plots, fig.height=6, fig.width = 10}
+# Define marker groups as before
+marker_groups <- list(
+    "Basal Epidermis" = c("tp63.L", "tp63.S"),
+    "Epidermis" = c("fgfbp2.L", "nptx1.L"),
+    "Erythrocytes" = c("epor.L", "hba1.S"),
+    "Goblet Cells" = c("itln1.L", "anxa9.L"),
+    "Ionocytes" = c("atp6v0d2.L", "foxi1.L"),
+    "MCCs" = c("iqcd.L", "tekt3.L"),
+    "Melanocytes" = c("sox10.L", "slc45a2.L"),
+    "Muscle Cells" = c("eno3.L", "des.1.L"),
+    "Neuronal Cells" = c("sncb.L", "elavl4.L"),
+    "Notochord" = c("plod2.L", "col9a1-b"),
+    "ROCs" = c("fgf10.L", "lef1.S"),
+    "Somites and Other" = c("pax9.L", "zic1.L"),
+    "SSCs" = c("foxa1.L", "kcna4.S")
+)
+
+# Calculate the combined UCell score for each marker group
+for (group_name in names(marker_groups)) {
+    markers <- marker_groups[[group_name]]
+    Combined_hpa[[paste0(group_name, "_combined")]] <- rowMeans(
+        FetchData(Combined_hpa, vars = markers),
+        na.rm = TRUE
+    )
+}
+
+# Create a list of the new combined feature names
+combined_features <- paste0(names(marker_groups), "_combined")
+
+# Plot the combined UCell scores for each group
+for (combined_feature in combined_features) {
+    plot <- VlnPlot(Combined_hpa, features = combined_feature, group.by = "seurat_clusters", pt.size = 0.5) +
+        ggtitle(paste("Combined UCell Score for", gsub("_combined", "", combined_feature))) +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        theme(plot.title = element_text(size = 14, face = "bold"))
+    
+    print(plot)  # Print each plot
+}
+
+```
+Another visualisation
+```{r visualisation}
+for (combined_feature in combined_features) {
+FeaturePlot(Combined_hpa, features = combined_feature, reduction = "umap", pt.size = 0.3) +
+    theme_minimal() +
+    ggtitle(paste("Combined UCell Score for", gsub("_combined", "", combined_feature)))
+
+print(plot)  # Print each plot
+}
+
+```
 Resources for annotation
 - [Characterization of regeneration initiating cells during Xenopus laevis tail regeneration](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-024-03396-3)
 
@@ -125,14 +256,14 @@ features_test <- c("tp63.L","tp63.S",            #basal epidermis
                     "foxa1.L","kcna4.S"          #SSCs 
                    )
 ```
-```{r dotplot, echo=FALSE, fig.height=6, fig.width = 6.2}
+```{r dotplot, echo=FALSE, fig.height=10, fig.width = 16.2}
 Combined_hpa@active.ident <- factor(Combined_hpa@active.ident,
                                levels = c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32"))
 DotPlot(Combined_hpa, features = features_test) + theme(axis.text.x=element_text(angle=90, hjust = 1, vjust = 0.5))
 ```
 Cluster annotation
 ```{r eval=FALSE}
-seurat_integrated <- RenameIdents(seurat_integrated,
+Combined_hpa <- RenameIdents(Combined_hpa,
                                   '0' = "basal epidermis",
                                   '1' = "goblet cells",
                                   '2' = "basal epidermis",
@@ -141,29 +272,47 @@ seurat_integrated <- RenameIdents(seurat_integrated,
                                   '5' = "basal epidermis",
                                   '6' = "basal epidermis",
                                   '7' = "somites and other",
-                                  '8' = "???",
-                                  '9' = "rocs",
-                                  '10' = "???",
-                                  '11' = "???",
+                                  '8' = "goblet cells",
+                                  '9' = "ROCs",
+                                  '10' = "??? muscle",
+                                  '11' = "??? muscle ",
                                   '12' = "muscle cells",
-                                  '13' = "???",
-                                  '14' = "???",
+                                  '13' = "goblet cells",
+                                  '14' = "MCCs??",
                                   '15' = "muscle cells",
                                   '16' = "neuronal cells",
                                   '17' = "erythrocytes",
                                   '18' = "ionocytes",
                                   '19' = "goblet cells",
                                   '20' = "melanocytes",
-                                  '21' = "???",
+                                  '21' = "somites and other",
                                   '22' = "SSCs",
                                   '23' = "notochord",
                                   '24' = "ionocytes",
                                   '25' = "???",
                                   '26' = "???",
-                                  '27' = "rocs",
+                                  '27' = "ROCs",
                                   '28' = "??",
                                   '29' = "melanocytes",
-                                  '30' = "?somites and other? or notochord",
+                                  '30' = "somites and others",
                                   '31' = "SSCs",
-                                  '32' = "MCCs",)
+                                  '32' = "MCCs")
+```
+Merged clusters visualised 
+```{r}
+cluster_labels <- levels(Combined_hpa)
+
+# Generate a color palette with the same number of colors as there are clusters
+cluster_colors <- Polychrome::createPalette(length(cluster_labels), c("#ff0000", "#00ff00", "#0000ff"))
+
+# Assign each color to a cluster name
+names(cluster_colors) <- cluster_labels
+
+# Generate the UMAP plot with custom colors
+DimPlot(Combined_hpa, reduction = "umap") +
+    scale_color_manual(values = cluster_colors) +
+    theme_minimal() +
+    ggtitle("UMAP with merged clusters")
+
+
 ```
