@@ -218,7 +218,7 @@ for (combined_feature in combined_features) {
 ```
 # Cluster annotation
 Cluster that I was unable to annotate have only goblet cells markers but not higher than most of the other clusters
-```{r eval=FALSE}
+```{r}
 levels(Combined_hpa)
 head(Idents(Combined_hpa))
 Combined_hpa <- RenameIdents(Combined_hpa,
