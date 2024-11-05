@@ -1,0 +1,159 @@
+---
+title: "Annotation_Ravi_tutorial_hpa"
+author: "Ladislav Buček"
+date: "5/11/2024"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Library
+```{r library}
+options(java.parameters = "-Xmx30000m")
+set.seed(100)
+
+required_Packages_Install <- c("dplyr", "patchwork", "Seurat","DT","ggplot2","UCell","Polychrome","stringr")
+for(Package in required_Packages_Install){
+  if(!require(Package,character.only = TRUE)) { 
+    install.packages(Package, dependencies=TRUE)
+  }
+  library(Package,character.only = TRUE)
+}
+
+```
+```{r top population markers}
+Combined_hpa <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa_integrated_with_markers.rds")
+Combined_hpa_markers <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa_markers.rds")
+
+#Combined_hpa_conserved_markers <- FindConservedMarkers(Combined_hpa)
+head(Idents(Combined_hpa))
+datatable(Combined_hpa_markers %>% group_by(cluster) %>% top_n(n = 30, wt = avg_log2FC))
+
+```
+
+Resources for annotation
+- [Characterization of regeneration initiating cells during Xenopus laevis tail regeneration](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-024-03396-3)
+
+Identifying the populations
+```{r canonical markers}
+features_test <- c("tp63.L","tp63.S",            #basal epidermis
+                    "fgfbp2.L","nptx1.L",        #epidermis
+                    "epor.L","hba1.S",           #erythrocytes
+                    "itln1.L","anxa9.L",         #goblet cells
+                    "atp6v0d2.L","foxi1.L",      #ionocytes
+                    "iqcd.L","tekt3.L",          #MCCs
+                    "sox10.L","slc45a2.L",       #Melanocytes
+                    "eno3.L","des.1.L",          #muscle cells
+                    "sncb.L","elavl4.L",         #neuronal cells
+                    "plod2.L","col9a1-b",        #notochord
+                    "fgf10.L","lef1.S",          #ROCs
+                    "pax9.L","zic1.L",           #somites and other
+                    "foxa1.L","kcna4.S"          #SSCs
+                   )
+```
+feature for every cluster 
+```{r}
+features_basal_ep <- c("htra4.L", "ctbs.s", "fgfbp2.S", "vit.L", "kera.S",
+                       "vit.S", "LOC108715242", "srpx.S", "lamb4.L",
+                       "LOC108711240", "col6a1.S", "thdl20.L", "LOC108706832",
+                       "LOC108701201", "npnt.S", "XB956263.L", "sema3d.L",
+                       "rgs10.L", "LOC108716056", "gpc1.S")
+features_erythrocytes <- c("")
+```
+```{r dotplot, echo=FALSE, fig.height=10, fig.width = 16.2}
+DotPlot(Combined_hpa, features = features_test) + theme(axis.text.x=element_text(angle=90, hjust = 1, vjust = 0.5))
+```
+
+# Cluster annotation
+Cluster that I was unable to annotate have only goblet cells markers but not higher than most of the other clusters
+```{r}
+levels(Combined_hpa)
+head(Idents(Combined_hpa))
+Combined_hpa <- RenameIdents(Combined_hpa,
+                                  "0" = "basal epidermis (tp63+)",
+                                  '1' = "goblet cells",
+                                  '2' = "RICs",
+                                  '3' = "basal epidermis (tp63+)",
+                                  '4' = "somites and others",
+                                  '5' = "basal epidermis (tp63+)",
+                                  '6' = "RICs",
+                                  '7' = "melanocytes precusors",
+                                  '8' = "goblet cells",
+                                  '9' = "ROCs",
+                                  '10' = "muscle cells",
+                                  '11' = "muscle cells precusors",
+                                  '12' = "muscle cells",
+                                  '13' = "myeloid cells",
+                                  '14' = "MCCs",
+                                  '15' = "muscle cells",
+                                  '16' = "neuronal cells",
+                                  '17' = "erythrocytes",
+                                  '18' = "ionocytes",
+                                  '19' = "goblet cells",
+                                  '20' = "melanocytes",
+                                  '21' = "muscle cells precusors",
+                                  '22' = "SSCs",
+                                  '23' = "notochord",
+                                  '24' = "ionocytes",
+                                  '25' = "myeloid cells",
+                                  '26' = "myeloid cells",
+                                  '27' = "ROCs",
+                                  '28' = "myeloid cells",
+                                  '29' = "melanocytes",
+                                  '30' = "somites and others",
+                                  '31' = "SSCs",
+                                  '32' = "MCCs")
+```
+Merged clusters visualised 
+```{r}
+
+levels(Combined_hpa)
+# View the metadata
+
+cluster_labels_m <- levels(Combined_hpa)
+
+# Generate a color palette with the same number of colors as there are clusters
+cluster_colors_m <- Polychrome::createPalette(length(cluster_labels_m), c("#ff0000", "#00ff00", "#0000ff"))
+
+# Assign each color to a cluster name
+names(cluster_colors_m) <- cluster_labels_m
+
+# Generate the UMAP plot with custom colors
+DimPlot(Combined_hpa, reduction = "umap") +
+    scale_color_manual(values = cluster_colors_m) +
+    theme_minimal() +
+    ggtitle("UMAP with merged clusters")
+```
+
+# Comparision with Ravi's annotation
+```{r}
+obj_ravi_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/seurat_integrated_sctmark_ravi.rds")
+
+#updating my barcodes to match Ravi's
+rownames(Combined_hpa@meta.data) <- gsub("_1", "-0_hpa_B", rownames(Combined_hpa@meta.data))
+rownames(Combined_hpa@meta.data) <- gsub("_2", "-1_hpa_B", rownames(Combined_hpa@meta.data))
+rownames(Combined_hpa@meta.data) <- gsub("_3", "-3_hpa_A", rownames(Combined_hpa@meta.data))
+rownames(Combined_hpa@meta.data) <- gsub("_4", "-12_hpa_A", rownames(Combined_hpa@meta.data))
+
+# Check if the rownames now match
+length(intersect(rownames(Combined_hpa@meta.data), rownames(obj_ravi_processed@meta.data)))
+
+# Add the identities to the metadata
+Combined_hpa@meta.data$my_annotation <- as.character(Idents(Combined_hpa))
+
+supervisor_annotations <- obj_ravi_processed@meta.data
+
+Combined_hpa$supervisor_annotation <- supervisor_annotations$cell_type_final[match(rownames(Combined_hpa@meta.data), rownames(supervisor_annotations))]
+
+comparison_df <- Combined_hpa@meta.data %>%
+  group_by(my_annotation, supervisor_annotation) %>%
+  summarise(count = n()) %>%
+  group_by(my_annotation) %>%
+  mutate(proportion = count / sum(count))
+
+ggplot(comparison_df, aes(x = my_annotation, y = proportion, fill = supervisor_annotation)) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(x = "Your Cluster Annotation", y = "Proportion", fill = "Supervisor Annotation") +
+  theme_minimal() +
+  ggtitle("Comparison of Annotations")
+```

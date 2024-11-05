@@ -105,6 +105,8 @@ DimPlot(Combined_hpa, reduction = "umap", group.by = "seurat_clusters") +
 DimPlot(Combined_hpa, reduction = "umap", split.by = "hpa") + 
     scale_color_manual(values = cluster_colors)
 
+saveRDS(Combined_hpa, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa_integrated_with_markers.rds")
+
 ```
 
 ## markers and annotation
@@ -113,6 +115,8 @@ Idents(Combined_hpa) <- Combined_hpa@meta.data$seurat_clusters
 Combined_hpa_markers <- FindAllMarkers(Combined_hpa, only.pos = TRUE)
 #Combined_hpa_conserved_markers <- FindConservedMarkers(Combined_hpa)
 head(Idents(Combined_hpa))
+saveRDS(Combined_hpa_markers, file = "/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/Combined_hpa_markers.rds")
+
 ```
 
 ```{r top population markers}
@@ -136,8 +140,17 @@ features_test <- c("tp63.L","tp63.S",            #basal epidermis
                     "plod2.L","col9a1-b",        #notochord
                     "fgf10.L","lef1.S",          #ROCs
                     "pax9.L","zic1.L",           #somites and other
-                    "foxa1.L","kcna4.S"          #SSCs 
+                    "foxa1.L","kcna4.S"          #SSCs
                    )
+```
+feature for every cluster 
+```{r}
+features_basal_ep <- c("htra4.L", "ctbs.s", "fgfbp2.S", "vit.L", "kera.S",
+                       "vit.S", "LOC108715242", "srpx.S", "lamb4.L",
+                       "LOC108711240", "col6a1.S", "thdl20.L", "LOC108706832",
+                       "LOC108701201", "npnt.S", "XB956263.L", "sema3d.L",
+                       "rgs10.L", "LOC108716056", "gpc1.S")
+features_erythrocytes <- c("")
 ```
 ```{r dotplot, echo=FALSE, fig.height=10, fig.width = 16.2}
 DotPlot(Combined_hpa, features = features_test) + theme(axis.text.x=element_text(angle=90, hjust = 1, vjust = 0.5))
@@ -275,4 +288,18 @@ DimPlot(Combined_hpa, reduction = "umap") +
     scale_color_manual(values = cluster_colors_m) +
     theme_minimal() +
     ggtitle("UMAP with merged clusters")
+```
+
+# Comparision with Ravi's annotation
+```{r}
+#obj_ravi_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/seurat_integrated_sctmark_ravi.rds")
+
+# Ensure reference_data has columns "barcode" (matching cell IDs) and "ref_annotation" (annotation)
+# Perform an outer join to merge, keeping all cells in both datasets
+#merged_metadata <- Combined_hpa@meta.data %>%
+#  left_join(obj_ravi_processed, by = "barcode") %>%
+#  rename(your_annotation = cell_type_final, ref_annotation = ref_annotation)
+
+# Update Seurat object’s metadata with the merged data
+#seurat_obj@meta.data <- merged_metadata
 ```

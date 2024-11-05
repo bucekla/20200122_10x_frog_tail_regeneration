@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r library}
 options(java.parameters = "-Xmx30000m")
 set.seed(100)
-required_Packages_Install <- c("dplyr", "patchwork", "Seurat")
+required_Packages_Install <- c("dplyr", "patchwork", "Seurat",)
 for(Package in required_Packages_Install){
   if(!require(Package,character.only = TRUE)) { 
     install.packages(Package, dependencies=TRUE)
