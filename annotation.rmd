@@ -126,7 +126,7 @@ DimPlot(Combined_hpa, reduction = "umap") +
 ```
 
 # Comparision with Ravi's annotation
-```{r}
+```{r,fig.height=10, fig.width = 16.2}
 obj_ravi_processed <- readRDS("/Users/ladislavbucek/Desktop/UK/Mgr./labgenexp/20200122_10x_frog_tail_regeneration/20220817_new_genome/data/processed/seurat_integrated_sctmark_ravi.rds")
 
 #updating my barcodes to match Ravi's
@@ -141,19 +141,54 @@ length(intersect(rownames(Combined_hpa@meta.data), rownames(obj_ravi_processed@m
 # Add the identities to the metadata
 Combined_hpa@meta.data$my_annotation <- as.character(Idents(Combined_hpa))
 
-supervisor_annotations <- obj_ravi_processed@meta.data
+ravi_meta_data <- obj_ravi_processed@meta.data
 
-Combined_hpa$supervisor_annotation <- supervisor_annotations$cell_type_final[match(rownames(Combined_hpa@meta.data), rownames(supervisor_annotations))]
+Combined_hpa$ravi_annotation <- ravi_meta_data$cell_type_final[match(rownames(Combined_hpa@meta.data), rownames(ravi_meta_data))]
 
 comparison_df <- Combined_hpa@meta.data %>%
-  group_by(my_annotation, supervisor_annotation) %>%
+  group_by(my_annotation, ravi_annotation) %>%
   summarise(count = n()) %>%
   group_by(my_annotation) %>%
   mutate(proportion = count / sum(count))
 
-ggplot(comparison_df, aes(x = my_annotation, y = proportion, fill = supervisor_annotation)) +
+ggplot(comparison_df, aes(x = my_annotation, y = proportion, fill = ravi_annotation)) +
   geom_bar(stat = "identity", position = "fill") +
-  labs(x = "Your Cluster Annotation", y = "Proportion", fill = "Supervisor Annotation") +
+  labs(x = "Ladislav's Annotation", y = "Proportion", fill = "Ravi's Annotation") +
   theme_minimal() +
-  ggtitle("Comparison of Annotations")
+  ggtitle("Comparison of Annotations")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Seurat clusters correlation
+```{r}
+Combined_hpa$ravi_seurat_clusters <- ravi_meta_data$seurat_clusters[match(rownames(Combined_hpa@meta.data), rownames(ravi_meta_data))]
+#TO DO
+comparison_df <- Combined_hpa@meta.data %>%
+  group_by(seurat_clusters, ravi_seurat_clusters) %>%
+  summarise(count = n()) %>%
+  group_by(seurat_clusters) %>%
+  mutate(proportion = count / sum(count))
+
+ggplot(comparison_df, aes(x = seurat_clusters, y = proportion, fill = ravi_seurat_clusters)) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(x = "Ladislav's Clusters", y = "Proportion", fill = "Ravi's Clusters") +
+  theme_minimal() +
+  ggtitle("Comparison of Clusters")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Comparision of gene sets
+```{r}
+length(rownames(Combined_hpa))
+length(rownames(obj_ravi_processed))
+common_genes <- intersect(rownames(Combined_hpa), rownames(obj_ravi_processed))
+
+gene_comparison_df <- data.frame(Gene = common_genes)
+
+marker_presence <- gene_comparison_df[gene_comparison_df$Gene %in% features_test, ]
+
+if(length(marker_presence) == length(features_test)){
+    print("no marker is missing in Ladislav's dataset")
+}
+
 ```
